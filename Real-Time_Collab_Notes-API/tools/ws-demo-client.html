@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Realtime Notes Demo</title>
+  <style>
+    :root {
+      --bg: #f5f3ef;
+      --surface: #ffffff;
+      --surface-2: #fbfaf7;
+      --surface-3: #f4efe7;
+      --border: #ddd6ca;
+      --border-strong: #c8bfaf;
+      --text: #111827;
+      --muted: #5f6b7a;
+      --muted-2: #7a8594;
+      --accent: #174e4b;
+      --accent-strong: #123b39;
+      --accent-soft: #e6f1ee;
+      --danger: #b42318;
+      --warning: #b45309;
+      --shadow: 0 18px 50px rgba(31, 24, 15, 0.08);
+      --shadow-soft: 0 8px 20px rgba(31, 24, 15, 0.04);
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)),
+        radial-gradient(circle at top, rgba(23, 78, 75, 0.08), transparent 32%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .shell {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: 0.02em;
+      box-shadow: 0 10px 18px rgba(23, 78, 75, 0.18);
+    }
+
+    .brand-text {
+      display: grid;
+      gap: 2px;
+    }
+
+    .brand-text strong {
+      font-size: 14px;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-text span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .status-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .statebar {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 0 18px 16px;
+      border-bottom: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .state-chip {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface-2);
+      padding: 10px 12px;
+    }
+
+    .state-chip .label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .state-chip .value {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .status::before {
+      content: '';
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.4;
+    }
+
+    .status.ok {
+      color: var(--accent-strong);
+    }
+
+    .status.err {
+      color: var(--danger);
+    }
+
+    .status.warn {
+      color: var(--warning);
+    }
+
+    .status-subtle {
+      font-size: 13px;
+      color: var(--muted);
+      max-width: 380px;
+      line-height: 1.5;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 0;
+    }
+
+    .sidebar {
+      padding: 16px;
+      border-right: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+
+    .main {
+      padding: 16px;
+      background: #fff;
+    }
+
+    .section {
+      margin-bottom: 14px;
+    }
+
+    .section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .section-title h2 {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .section-title span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    input,
+    textarea,
+    button {
+      width: 100%;
+      box-sizing: border-box;
+      font: inherit;
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fff;
+      color: var(--text);
+      transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, background 160ms ease;
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: rgba(15, 118, 110, 0.38);
+      box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.1);
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 460px;
+      resize: vertical;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    button {
+      cursor: pointer;
+      background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      box-shadow: 0 10px 18px rgba(17, 94, 89, 0.16);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.secondary {
+      background: #fff;
+      color: var(--text);
+      box-shadow: none;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .buttons.three {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .list li {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fff;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .workspace-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .workspace-head .toolbar-actions {
+      display: flex;
+      gap: 10px;
+      min-width: 280px;
+    }
+
+    .workspace-head .muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 12px;
+      line-height: 1.6;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 14px;
+      min-height: 260px;
+      overflow: auto;
+      border: 1px solid #1f2937;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .buttons,
+      .buttons.three {
+        grid-template-columns: 1fr;
+      }
+
+      .workspace-head .toolbar-actions {
+        min-width: 0;
+        width: 100%;
+        flex-direction: column;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .status-row {
+        justify-content: flex-start;
+      }
+
+      .statebar {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+</head>
+
+<body>
+  <div class="page">
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark">N</div>
+          <div>
+            <div class="brand-text">
+              <strong>Realtime Notes</strong>
+              <span>Collaborative editor workspace</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="status-row">
+          <div id="status" class="status warn">Disconnected</div>
+          <div class="eyebrow">Autosave on input</div>
+          <div class="eyebrow">Conflict aware</div>
+        </div>
+      </header>
+
+      <div class="statebar">
+        <div class="state-chip">
+          <span class="label">Connection</span>
+          <div class="value" id="connectionMetric">Offline</div>
+        </div>
+        <div class="state-chip">
+          <span class="label">Room</span>
+          <div class="value" id="roomMetric">No room</div>
+        </div>
+        <div class="state-chip">
+          <span class="label">Version</span>
+          <div class="value" id="versionMetric">0</div>
+        </div>
+      </div>
+
+      <div class="layout">
+        <aside class="sidebar">
+          <div class="card stack section">
+            <div class="section-title">
+              <h2>Connection</h2>
+              <span>Socket auth</span>
+            </div>
+
+            <div>
+              <label for="serverUrl">Socket Server URL</label>
+              <input id="serverUrl" value="http://localhost:8001" />
+              <div class="muted" style="margin-top: 6px;">Use the websocket server URL your backend is running on.</div>
+            </div>
+
+            <div>
+              <label for="token">JWT Token</label>
+              <input id="token" placeholder="Paste access token here" />
+              <div class="muted" style="margin-top: 6px;">Required for socket authentication before joining a room.
+              </div>
+            </div>
+
+            <div class="buttons">
+              <button id="connectBtn">Connect</button>
+              <button id="disconnectBtn" class="secondary">Disconnect</button>
+            </div>
+          </div>
+
+          <div class="card stack section">
+            <div class="section-title">
+              <h2>Room</h2>
+              <span>Presence + snapshot</span>
+            </div>
+
+            <div>
+              <label for="roomName">Room Name</label>
+              <input id="roomName" value="test-room" />
+              <div class="muted" style="margin-top: 6px;">Join the same room on multiple clients to test live sync.
+              </div>
+            </div>
+
+            <div class="buttons three">
+              <button id="createRoomBtn">Create</button>
+              <button id="joinBtn">Join</button>
+              <button id="snapshotBtn" class="secondary">Load</button>
+            </div>
+
+            <div>
+              <div class="muted" id="currentRoomLabel">No room joined</div>
+              <ul id="presenceList" class="list" style="margin-top: 10px"></ul>
+            </div>
+          </div>
+        </aside>
+
+        <main class="main">
+          <div class="card stack section">
+            <div class="workspace-head">
+              <div>
+                <div class="section-title" style="margin-bottom: 6px;">
+                  <h2>Shared Note</h2>
+                  <span>Autosave enabled</span>
+                </div>
+                <p class="muted">Typing updates the room automatically. Manual save still works if you want to force an
+                  emit.</p>
+              </div>
+
+              <div class="toolbar-actions">
+                <button id="updateBtn">Save now</button>
+                <button id="syncVersionBtn" class="secondary">Sync version</button>
+              </div>
+            </div>
+
+            <div class="stack">
+              <div>
+                <label for="clientVersion">Client Version</label>
+                <input id="clientVersion" type="number" value="0" min="0" />
+                <div class="muted" style="margin-top: 6px;">This is updated from the latest accepted save.</div>
+              </div>
+
+              <div>
+                <label for="noteContent">Content</label>
+                <textarea id="noteContent" placeholder="Write the shared note here"></textarea>
+                <div class="muted" style="margin-top: 6px;">Autosaves after a short pause while you type or delete text.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card section">
+            <div class="section-title">
+              <h2>Event Log</h2>
+              <span>Realtime trace</span>
+            </div>
+            <pre id="log"></pre>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let socket = null;
+    let latestVersion = 0;
+    let joinedRoomName = '';
+    let currentMembers = [];
+    let autosaveTimer = null;
+    let saveInFlight = false;
+    let saveQueuedWhileInFlight = false;
+    let noteInputListenerAttached = false;
+
+    const ui = {
+      status: document.getElementById('status'),
+      serverUrl: document.getElementById('serverUrl'),
+      token: document.getElementById('token'),
+      roomName: document.getElementById('roomName'),
+      clientVersion: document.getElementById('clientVersion'),
+      noteContent: document.getElementById('noteContent'),
+      log: document.getElementById('log'),
+      connectBtn: document.getElementById('connectBtn'),
+      disconnectBtn: document.getElementById('disconnectBtn'),
+      createRoomBtn: document.getElementById('createRoomBtn'),
+      joinBtn: document.getElementById('joinBtn'),
+      snapshotBtn: document.getElementById('snapshotBtn'),
+      updateBtn: document.getElementById('updateBtn'),
+      syncVersionBtn: document.getElementById('syncVersionBtn'),
+      presenceList: document.getElementById('presenceList'),
+      currentRoomLabel: document.getElementById('currentRoomLabel'),
+    };
+
+    function logEvent(event, payload) {
+      const stamp = new Date().toISOString();
+      ui.log.textContent = `[${stamp}] ${event}\n${JSON.stringify(payload ?? {}, null, 2)}\n\n` + ui.log.textContent;
+    }
+
+    function setStatus(text, kind = '') {
+      ui.status.textContent = text;
+      ui.status.className = `status ${kind}`.trim();
+    }
+
+    function setLatestVersion(version) {
+      if (typeof version !== 'number') return;
+      latestVersion = version;
+      ui.clientVersion.value = String(version);
+      const versionMetric = document.getElementById('versionMetric');
+      if (versionMetric) {
+        versionMetric.textContent = String(version);
+      }
+    }
+
+    function setPresence(roomName, members) {
+      joinedRoomName = roomName || joinedRoomName;
+      currentMembers = Array.isArray(members) ? members : [];
+      const roomMetric = document.getElementById('roomMetric');
+      if (roomMetric) {
+        roomMetric.textContent = joinedRoomName || 'No room';
+      }
+      ui.currentRoomLabel.textContent = joinedRoomName
+        ? `Room: ${joinedRoomName}`
+        : 'No room joined';
+      ui.presenceList.innerHTML = '';
+
+      if (currentMembers.length === 0) {
+        const empty = document.createElement('li');
+        empty.textContent = 'No connected users found.';
+        ui.presenceList.appendChild(empty);
+        return;
+      }
+
+      for (const member of currentMembers) {
+        const item = document.createElement('li');
+        item.textContent = `${member.userId || 'unknown'}  |  ${member.socketId}`;
+        ui.presenceList.appendChild(item);
+      }
+    }
+
+    function ensureSocket() {
+      if (!socket) {
+        alert('Connect first');
+        return false;
+      }
+      return true;
+    }
+
+    function setConnectionMetric(text) {
+      const connectionMetric = document.getElementById('connectionMetric');
+      if (connectionMetric) {
+        connectionMetric.textContent = text;
+      }
+    }
+
+    function emitNoteUpdate() {
+      if (!ensureSocket()) return;
+
+      const roomName = ui.roomName.value.trim();
+      const content = ui.noteContent.value;
+      const clientVersion = Number(ui.clientVersion.value);
+
+      if (!roomName) {
+        alert('Room name is required');
+        return;
+      }
+
+      if (saveInFlight) {
+        saveQueuedWhileInFlight = true;
+        return;
+      }
+
+      saveInFlight = true;
+      socket.emit('update_note', { roomName, content, clientVersion }, (ack) => {
+        logEvent('ack.update_note', ack);
+
+        if (ack && ack.data && typeof ack.data.version === 'number') {
+          setLatestVersion(ack.data.version);
+        }
+
+        saveInFlight = false;
+
+        if (saveQueuedWhileInFlight) {
+          saveQueuedWhileInFlight = false;
+          window.setTimeout(emitNoteUpdate, 0);
+        }
+      });
+    }
+
+    function scheduleAutosave() {
+      if (!ensureSocket()) return;
+
+      window.clearTimeout(autosaveTimer);
+      autosaveTimer = window.setTimeout(() => {
+        emitNoteUpdate();
+      }, 350);
+    }
+
+    async function createRoom() {
+      const roomName = ui.roomName.value.trim();
+      const serverUrl = ui.serverUrl.value.trim();
+
+      if (!roomName) {
+        alert('Room name is required');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${serverUrl}/room`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: roomName }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          setStatus(`Create room failed (${response.status})`, 'err');
+          logEvent('room.create_error', { status: response.status, data });
+          return;
+        }
+
+        setStatus(`Room created: ${roomName}`, 'ok');
+        logEvent('room.create_success', data);
+      } catch (error) {
+        setStatus('Create room request failed', 'err');
+        logEvent('room.create_exception', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    ui.connectBtn.addEventListener('click', () => {
+      if (socket) {
+        socket.disconnect();
+        socket = null;
+      }
+
+      const url = ui.serverUrl.value.trim();
+      const token = ui.token.value.trim();
+
+      if (!url || !token) {
+        alert('Server URL and JWT token are required.');
+        return;
+      }
+
+      socket = io(url, {
+        query: { token },
+        transports: ['websocket'],
+      });
+
+      socket.on('connect', () => {
+        setStatus(`Connected (${socket.id})`, 'ok');
+        setConnectionMetric('Online');
+        logEvent('socket.connect', { socketId: socket.id });
+      });
+
+      socket.on('connect_error', (err) => {
+        setStatus(`Connect error: ${err.message}`, 'err');
+        logEvent('socket.connect_error', { message: err.message });
+      });
+
+      socket.on('exception', (payload) => {
+        setStatus('Server exception', 'err');
+        logEvent('socket.exception', payload);
+      });
+
+      socket.on('error', (payload) => {
+        setStatus('Socket error', 'err');
+        logEvent('socket.error', payload);
+      });
+
+      socket.on('disconnect', (reason) => {
+        setStatus(`Disconnected: ${reason}`, 'err');
+        setConnectionMetric('Offline');
+        logEvent('socket.disconnect', { reason });
+      });
+
+      socket.on('connected', (payload) => {
+        logEvent('connected', payload);
+      });
+
+      socket.on('disconnected', (payload) => {
+        logEvent('disconnected', payload);
+      });
+
+      socket.on('room_presence', (payload) => {
+        logEvent('room_presence', payload);
+        setPresence(payload.roomId || joinedRoomName, payload.members);
+      });
+
+      socket.on('note_updated', (payload) => {
+        logEvent('note_updated', payload);
+        if (typeof payload.content === 'string') {
+          ui.noteContent.value = payload.content;
+        }
+        setLatestVersion(payload.version);
+      });
+
+      socket.on('note_conflict', (payload) => {
+        logEvent('note_conflict', payload);
+        if (typeof payload.latestContent === 'string') {
+          ui.noteContent.value = payload.latestContent;
+        }
+        setLatestVersion(payload.latestVersion);
+      });
+
+      if (!noteInputListenerAttached) {
+        ui.noteContent.addEventListener('input', scheduleAutosave);
+        noteInputListenerAttached = true;
+      }
+    });
+
+    ui.disconnectBtn.addEventListener('click', () => {
+      if (socket) {
+        socket.disconnect();
+        socket = null;
+        window.clearTimeout(autosaveTimer);
+        autosaveTimer = null;
+        saveInFlight = false;
+        saveQueuedWhileInFlight = false;
+        setStatus('Disconnected');
+        setConnectionMetric('Offline');
+      }
+    });
+
+    ui.createRoomBtn.addEventListener('click', createRoom);
+
+    ui.joinBtn.addEventListener('click', () => {
+      if (!ensureSocket()) return;
+
+      const roomName = ui.roomName.value.trim();
+
+      if (!roomName) {
+        alert('Room name is required');
+        return;
+      }
+
+      let ackReceived = false;
+
+      socket.emit('join_room', { roomName }, (ack) => {
+        ackReceived = true;
+        logEvent('ack.join_room', ack);
+
+        if (ack?.status === 'success') {
+          joinedRoomName = roomName;
+          ui.currentRoomLabel.textContent = `Room: ${roomName}`;
+          setStatus('Joined room successfully', 'ok');
+        }
+      });
+
+      window.setTimeout(() => {
+        if (!ackReceived) {
+          setStatus('No join_room ack received', 'err');
+          logEvent('ack.join_room_timeout', {
+            roomName,
+            message: 'No ack in 3 seconds. Check server logs and room name.',
+          });
+        }
+      }, 3000);
+    });
+
+    ui.snapshotBtn.addEventListener('click', () => {
+      if (!ensureSocket()) return;
+
+      const roomName = ui.roomName.value.trim();
+      socket.emit('get_note_snapshot', { roomName }, (ack) => {
+        logEvent('ack.get_note_snapshot', ack);
+        if (ack && ack.data) {
+          if (typeof ack.data.content === 'string') {
+            ui.noteContent.value = ack.data.content;
+          }
+          setLatestVersion(ack.data.version);
+        }
+      });
+    });
+
+    ui.updateBtn.addEventListener('click', () => {
+      emitNoteUpdate();
+    });
+
+    ui.syncVersionBtn.addEventListener('click', () => {
+      ui.clientVersion.value = String(latestVersion);
+    });
+
+    setPresence('', []);
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+model Room {
+  id        String       @id @default(uuid())
+  name      String       @unique
+
+  members   RoomMember[]
+  notes     Note[]
+
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([name])
+}
+
+model RoomMember {
+  id        String   @id @default(uuid())
+
+  // userId references users from the external authentication service
+  userId    String
+  roomId    String
+
+  role      Role     @default(EDITOR)
+
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([roomId, userId])
+  @@index([userId])
+  @@index([roomId])
+}
+
+model Note {
+  id        String        @id @default(uuid())
+  roomId    String
+  content   String        @default("")
+  crdtState Bytes?
+  version   Int           @default(0)
+
+  room      Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  history   NoteHistory[]
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([roomId])
+}
+
+model NoteHistory {
+  id        String   @id @default(uuid())
+  noteId    String
+  authorId  String?
+  content   String   @default("")
+  crdtState Bytes?
+  version   Int
+
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([noteId, version])
+}

@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Realtime Notes — Notion Experience (Vector Icons)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-canvas: #ffffff;
+      --bg-sidebar: #f7f6f3;
+      --bg-hover: rgba(55, 53, 47, 0.08);
+      --bg-active: rgba(55, 53, 47, 0.12);
+      --border-subtle: rgba(55, 53, 47, 0.09);
+      --border-strong: rgba(55, 53, 47, 0.2);
+      --text-main: #37352f;
+      --text-muted: rgba(55, 53, 47, 0.65);
+      --text-light: rgba(55, 53, 47, 0.45);
+      --callout-bg: #f7f7f5;
+      --peer-purple: #8752a3;
+      --peer-purple-soft: rgba(135, 82, 163, 0.12);
+      --font-stack: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background: var(--bg-canvas);
+      color: var(--text-main);
+      font-family: var(--font-stack);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .svg-icon {
+      width: 16px;
+      height: 16px;
+      stroke-width: 1.6;
+      stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+
+    /* Left Sidebar */
+    .sidebar {
+      width: 250px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      user-select: none;
+      font-size: 13.5px;
+    }
+
+    .workspace-switcher {
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      border-radius: 6px;
+      margin: 4px;
+      transition: background 0.1s ease;
+    }
+
+    .workspace-switcher:hover {
+      background: var(--bg-hover);
+    }
+
+    .workspace-info {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .workspace-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      background: #2383e2;
+      color: #fff;
+      display: grid;
+      place-items: center;
+    }
+
+    .workspace-avatar svg {
+      width: 13px;
+      height: 13px;
+      stroke: #fff;
+    }
+
+    .workspace-title {
+      font-weight: 600;
+      font-size: 13.5px;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
+    }
+
+    .sidebar-menu {
+      padding: 4px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 5px 8px;
+      border-radius: 5px;
+      font-size: 13.5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.1s ease, color 0.1s ease;
+    }
+
+    .menu-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+    }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-light);
+      padding: 16px 10px 4px;
+      letter-spacing: 0.04em;
+    }
+
+    .page-tree-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 8px;
+      border-radius: 5px;
+      font-size: 13.5px;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+
+    .page-tree-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .page-tree-item.active {
+      background: var(--bg-active);
+      font-weight: 500;
+    }
+
+    .sidebar-spacer {
+      flex: 1;
+    }
+
+    .sidebar-bottom {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 12px;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Main Notion Canvas Area */
+    .main-canvas {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-canvas);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Notion Top Header */
+    .canvas-topbar {
+      height: 45px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--text-muted);
+      user-select: none;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .breadcrumb-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 6px;
+      border-radius: 4px;
+    }
+
+    .breadcrumb-link:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+    }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sync-badge {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-right: 4px;
+    }
+
+    .top-avatars {
+      display: flex;
+      align-items: center;
+    }
+
+    .notion-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      margin-left: -5px;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 600;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .notion-avatar:first-child {
+      margin-left: 0;
+    }
+
+    .btn-notion-share {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.1s ease;
+    }
+
+    .btn-notion-share:hover {
+      background: var(--bg-hover);
+    }
+
+    .top-icon-btn {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border-radius: 4px;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    .top-icon-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+    }
+
+    /* Document Scrollport */
+    .document-scrollport {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      justify-content: center;
+      padding: 44px 24px 140px;
+      position: relative;
+    }
+
+    .notion-document {
+      width: 100%;
+      max-width: 780px;
+      position: relative;
+    }
+
+    /* Clean Page Icon Badge (No Emoji) */
+    .page-icon-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: #f1f1ef;
+      border: 1px solid var(--border-subtle);
+      display: grid;
+      place-items: center;
+      margin-bottom: 20px;
+      cursor: pointer;
+      transition: background 0.12s ease;
+    }
+
+    .page-icon-badge:hover {
+      background: #e8e8e6;
+    }
+
+    .page-icon-badge svg {
+      width: 24px;
+      height: 24px;
+      stroke: #37352f;
+      stroke-width: 1.5;
+    }
+
+    .page-actions-hover {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      opacity: 0.6;
+      font-size: 12px;
+      color: var(--text-light);
+    }
+
+    .page-action-btn {
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .page-action-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+    }
+
+    /* Document Title */
+    .notion-title {
+      font-size: 40px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--text-main);
+      border: none;
+      outline: none;
+      width: 100%;
+      background: transparent;
+      margin-bottom: 24px;
+      letter-spacing: -0.02em;
+    }
+
+    /* Block Structure */
+    .block {
+      display: flex;
+      align-items: flex-start;
+      margin: 4px 0;
+      position: relative;
+      border-radius: 4px;
+      padding: 2px 0;
+    }
+
+    .block-gutter {
+      width: 38px;
+      margin-left: -38px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 2px;
+      opacity: 0;
+      cursor: pointer;
+      color: var(--text-light);
+      padding-right: 6px;
+      user-select: none;
+      transition: opacity 0.15s ease;
+    }
+
+    .block:hover .block-gutter {
+      opacity: 1;
+    }
+
+    .gutter-btn {
+      width: 18px;
+      height: 20px;
+      display: grid;
+      place-items: center;
+      border-radius: 3px;
+      color: var(--text-light);
+    }
+
+    .gutter-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+    }
+
+    .block-content {
+      flex: 1;
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--text-main);
+      position: relative;
+    }
+
+    .block-h2 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-top: 26px;
+      margin-bottom: 6px;
+      letter-spacing: -0.015em;
+    }
+
+    /* Callout Block with Vector Icon */
+    .notion-callout {
+      background: var(--callout-bg);
+      border-radius: 6px;
+      padding: 16px 18px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      margin: 14px 0;
+      font-size: 15px;
+      line-height: 1.6;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .callout-icon-box {
+      width: 22px;
+      height: 22px;
+      display: grid;
+      place-items: center;
+      color: var(--text-muted);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Checkbox / Todo Block */
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 4px 0;
+    }
+
+    .todo-checkbox {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--border-strong);
+      border-radius: 4px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: all 0.1s ease;
+      background: #fff;
+    }
+
+    .todo-checkbox.checked {
+      background: #2383e2;
+      border-color: #2383e2;
+    }
+
+    .todo-checkbox svg {
+      display: none;
+      width: 10px;
+      height: 10px;
+      stroke: #fff;
+      stroke-width: 2.2;
+    }
+
+    .todo-checkbox.checked svg {
+      display: block;
+    }
+
+    .todo-text.checked {
+      text-decoration: line-through;
+      color: var(--text-light);
+    }
+
+    /* Toggle Block */
+    .notion-toggle {
+      margin: 6px 0;
+    }
+
+    .toggle-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      user-select: none;
+    }
+
+    .toggle-arrow {
+      width: 14px;
+      height: 14px;
+      color: var(--text-muted);
+      transition: transform 0.15s ease;
+    }
+
+    .toggle-arrow.open {
+      transform: rotate(90deg);
+    }
+
+    .toggle-body {
+      margin-left: 20px;
+      padding-top: 6px;
+      font-size: 15px;
+      color: var(--text-muted);
+      display: none;
+    }
+
+    .toggle-body.open {
+      display: block;
+    }
+
+    /* Live Notion Peer Cursor */
+    .notion-remote-cursor {
+      position: absolute;
+      pointer-events: none;
+      z-index: 50;
+      transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    .peer-caret {
+      width: 2px;
+      height: 20px;
+      background: var(--peer-purple);
+      border-radius: 1px;
+    }
+
+    .peer-pill {
+      position: absolute;
+      top: -20px;
+      left: 0;
+      background: var(--peer-purple);
+      color: #fff;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .selection-wash {
+      background: var(--peer-purple-soft);
+      border-radius: 2px;
+      padding: 1px 2px;
+    }
+
+    /* Slash Command Menu */
+    .slash-popup {
+      position: absolute;
+      top: 360px;
+      left: 60px;
+      width: 270px;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      box-shadow: 0 10px 30px rgba(15, 15, 15, 0.12), 0 2px 4px rgba(15, 15, 15, 0.04);
+      padding: 6px 0;
+      z-index: 60;
+      font-size: 13.5px;
+    }
+
+    .slash-group-label {
+      padding: 6px 12px 3px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .slash-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+
+    .slash-item:hover, .slash-item.selected {
+      background: var(--bg-hover);
+    }
+
+    .slash-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      display: grid;
+      place-items: center;
+      color: var(--text-muted);
+      background: #fff;
+    }
+
+    .slash-text-wrapper {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slash-item-title {
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .slash-item-desc {
+      font-size: 11.5px;
+      color: var(--text-light);
+    }
+
+    /* Floating Status Chip */
+    .notion-hud {
+      position: fixed;
+      bottom: 20px;
+      right: 24px;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      font-size: 12.5px;
+      z-index: 100;
+    }
+
+    .hud-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #2383e2;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left Sidebar (Clean Paper Style with SVG Icons) -->
+  <aside class="sidebar">
+    <div class="workspace-switcher">
+      <div class="workspace-info">
+        <div class="workspace-avatar">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M9 4v16"/><path d="M14 4v16"/><path d="M4 9h16"/><path d="M4 14h16"/></svg>
+        </div>
+        <span class="workspace-title">Personal Workspace</span>
+      </div>
+      <svg class="svg-icon" style="width: 12px; height: 12px; color: var(--text-light);" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+
+    <div class="sidebar-menu">
+      <div class="menu-item">
+        <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <span>Search</span>
+      </div>
+      <div class="menu-item">
+        <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span>Updates</span>
+      </div>
+      <div class="menu-item">
+        <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section-title">PRIVATE</div>
+    <div class="sidebar-menu">
+      <div class="page-tree-item active">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        <span>Q4 Engineering Roadmap</span>
+      </div>
+      <div class="page-tree-item">
+        <svg class="svg-icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span>System Architecture Spec</span>
+      </div>
+      <div class="page-tree-item">
+        <svg class="svg-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+        <span>Sprint Backlog</span>
+      </div>
+      <div class="page-tree-item">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <span>Feature Inventory</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section-title">SHARED</div>
+    <div class="sidebar-menu">
+      <div class="page-tree-item">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>Team Standup Notes</span>
+      </div>
+    </div>
+
+    <div class="sidebar-spacer"></div>
+
+    <div class="sidebar-bottom">
+      <div style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <svg class="svg-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>New Page</span>
+      </div>
+      <span>v0.4.2</span>
+    </div>
+  </aside>
+
+  <!-- Main Notion Page Canvas -->
+  <main class="main-canvas">
+    <!-- Clean Top Navigation Bar -->
+    <header class="canvas-topbar">
+      <div class="topbar-left">
+        <span class="breadcrumb-link">Personal Workspace</span>
+        <svg class="svg-icon" style="width: 12px; height: 12px; color: var(--text-light);" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="breadcrumb-link" style="color: var(--text-main); font-weight: 500;">Q4 Engineering Roadmap</span>
+      </div>
+
+      <div class="topbar-right">
+        <span class="sync-badge">Edited 2m ago</span>
+
+        <div class="top-avatars">
+          <div class="notion-avatar" style="background: #2383e2;" title="You (Editing)">ME</div>
+          <div class="notion-avatar" style="background: var(--peer-purple);" title="Sarah Chen (Viewing)">SC</div>
+        </div>
+
+        <button class="btn-notion-share">
+          <svg class="svg-icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span>Share</span>
+        </button>
+
+        <div class="top-icon-btn" title="Favorite">
+          <svg class="svg-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+
+        <div class="top-icon-btn" title="More Options">
+          <svg class="svg-icon" style="width: 14px; height: 14px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+        </div>
+      </div>
+    </header>
+
+    <!-- Document Scroll Area -->
+    <div class="document-scrollport">
+      <article class="notion-document">
+        
+        <!-- Clean Vector Document Badge (Replaces Emoji) -->
+        <div class="page-icon-badge" title="Change Document Icon">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+
+        <!-- Editable Title -->
+        <input type="text" class="notion-title" value="Q4 Engineering Roadmap" />
+
+        <!-- Block 1: Callout with Crisp Info Vector -->
+        <div class="block">
+          <div class="block-gutter">
+            <span class="gutter-btn">
+              <svg class="svg-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+            <span class="gutter-btn">
+              <svg class="svg-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+            </span>
+          </div>
+          <div class="block-content">
+            <div class="notion-callout">
+              <div class="callout-icon-box">
+                <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </div>
+              <div>
+                <strong>Primary Objective:</strong> Eliminate concurrent edit overwrites by moving from monolithic string saves to real-time CRDT updates.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Block 2: Paragraph with Peer Cursor -->
+        <div class="block" style="position: relative;">
+          <div class="block-gutter">
+            <span class="gutter-btn">
+              <svg class="svg-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+            <span class="gutter-btn">
+              <svg class="svg-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+            </span>
+          </div>
+          <div class="block-content">
+            This workspace synchronizes collaboratively across distributed team members. 
+            All changes are <span class="selection-wash">merged deterministically</span> so that zero keystrokes are dropped even during simultaneous co-authoring sessions.
+          </div>
+
+          <!-- Sarah's Notion Cursor -->
+          <div class="notion-remote-cursor" id="sarah-cursor" style="top: 24px; left: 340px;">
+            <div class="peer-caret"></div>
+            <div class="peer-pill">Sarah Chen</div>
+          </div>
+        </div>
+
+        <!-- Block 3: Heading 2 -->
+        <div class="block">
+          <div class="block-gutter">
+            <span class="gutter-btn">
+              <svg class="svg-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+            <span class="gutter-btn">
+              <svg class="svg-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+            </span>
+          </div>
+          <div class="block-content">
+            <h2 class="block-h2">Multiplayer Action Checklist</h2>
+          </div>
+        </div>
+
+        <!-- Block 4: Interactive Todos with Vector SVG Checks -->
+        <div class="block">
+          <div class="block-gutter">
+            <span class="gutter-btn">
+              <svg class="svg-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+            <span class="gutter-btn">
+              <svg class="svg-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+            </span>
+          </div>
+          <div class="block-content">
+            <div class="todo-item" onclick="toggleTodo(this)">
+              <div class="todo-checkbox checked">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <span class="todo-text checked">Audit WebSocket optimistic versioning lock</span>
+            </div>
+            <div class="todo-item" onclick="toggleTodo(this)">
+              <div class="todo-checkbox">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <span class="todo-text">Integrate Yjs CRDT binary sync protocol</span>
+            </div>
+            <div class="todo-item" onclick="toggleTodo(this)">
+              <div class="todo-checkbox">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <span class="todo-text">Enforce RoomMember RBAC permissions in Socket Gateway</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Block 5: Interactive Toggle Block with Clean SVG Arrow -->
+        <div class="block">
+          <div class="block-gutter">
+            <span class="gutter-btn">
+              <svg class="svg-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+            <span class="gutter-btn">
+              <svg class="svg-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+            </span>
+          </div>
+          <div class="block-content">
+            <div class="notion-toggle">
+              <div class="toggle-header" onclick="toggleDetails(this)">
+                <svg class="svg-icon toggle-arrow" id="toggle-arr" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                <span>Technical Specifications & Data Models</span>
+              </div>
+              <div class="toggle-body" id="toggle-content">
+                Documents are decomposed into distinct block entities. Each block maintains an immutable UUID and an append-only delta vector.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Block 6: Empty Block with Slash Trigger -->
+        <div class="block">
+          <div class="block-gutter">
+            <span class="gutter-btn">
+              <svg class="svg-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </span>
+            <span class="gutter-btn">
+              <svg class="svg-icon" style="width: 12px; height: 12px;" viewBox="0 0 24 24"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+            </span>
+          </div>
+          <div class="block-content" style="color: var(--text-light);">
+            Type <span style="color: var(--text-main); font-weight: 500;">/</span> for commands...
+          </div>
+        </div>
+
+        <!-- Notion Slash Menu Popup with Clean Vector Icons -->
+        <div class="slash-popup" id="slash-menu">
+          <div class="slash-group-label">BASIC BLOCKS</div>
+          <div class="slash-item selected">
+            <div class="slash-icon">
+              <svg class="svg-icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+            </div>
+            <div class="slash-text-wrapper">
+              <span class="slash-item-title">Text</span>
+              <span class="slash-item-desc">Just start writing with plain text.</span>
+            </div>
+          </div>
+          <div class="slash-item">
+            <div class="slash-icon">
+              <span style="font-size: 11px; font-weight: 700;">H1</span>
+            </div>
+            <div class="slash-text-wrapper">
+              <span class="slash-item-title">Heading 1</span>
+              <span class="slash-item-desc">Big section heading.</span>
+            </div>
+          </div>
+          <div class="slash-item">
+            <div class="slash-icon">
+              <svg class="svg-icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div class="slash-text-wrapper">
+              <span class="slash-item-title">To-do list</span>
+              <span class="slash-item-desc">Track tasks with a to-do list.</span>
+            </div>
+          </div>
+          <div class="slash-item">
+            <div class="slash-icon">
+              <svg class="svg-icon" style="width: 13px; height: 13px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            </div>
+            <div class="slash-text-wrapper">
+              <span class="slash-item-title">Callout</span>
+              <span class="slash-item-desc">Make writing stand out with an icon.</span>
+            </div>
+          </div>
+        </div>
+
+      </article>
+    </div>
+
+    <!-- Bottom HUD -->
+    <div class="notion-hud">
+      <div class="hud-dot"></div>
+      <span style="font-weight: 500;">Vector Craft Active</span>
+      <span style="color: var(--text-light);">• Zero Emojis • Precision SVG Icons</span>
+    </div>
+  </main>
+
+  <script>
+    function toggleTodo(el) {
+      const box = el.querySelector('.todo-checkbox');
+      const text = el.querySelector('.todo-text');
+      box.classList.toggle('checked');
+      text.classList.toggle('checked');
+    }
+
+    function toggleDetails() {
+      const arr = document.getElementById('toggle-arr');
+      const content = document.getElementById('toggle-content');
+      arr.classList.toggle('open');
+      content.classList.toggle('open');
+    }
+
+    const cursor = document.getElementById('sarah-cursor');
+    let t = 0;
+    setInterval(() => {
+      t += 0.04;
+      const dx = Math.sin(t) * 14;
+      const dy = Math.cos(t * 0.8) * 4;
+      cursor.style.transform = `translate(${dx}px, ${dy}px)`;
+    }, 60);
+  </script>
+</body>
+</html>

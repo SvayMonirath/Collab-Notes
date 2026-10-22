@@ -1,0 +1,22 @@
+{
+  "name": "real-time-collab-notes-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "100x Real-Time Collaborative Workspace with Yjs CRDT, NestJS, and Next.js Notion-style Frontend",
+  "scripts": {
+    "dev": "concurrently -n \"api,web\" -c \"cyan,magenta\" \"npm --prefix Real-Time_Collab_Notes-API run start:dev\" \"npm --prefix Real-Time-Collab-Notes-Frontend run dev\"",
+    "dev:api": "npm --prefix Real-Time_Collab_Notes-API run start:dev",
+    "dev:web": "npm --prefix Real-Time-Collab-Notes-Frontend run dev",
+    "build": "npm --prefix Real-Time_Collab_Notes-API run build && npm --prefix Real-Time-Collab-Notes-Frontend run build",
+    "build:api": "npm --prefix Real-Time_Collab_Notes-API run build",
+    "build:web": "npm --prefix Real-Time-Collab-Notes-Frontend run build",
+    "test": "npm --prefix Real-Time_Collab_Notes-API run test",
+    "test:e2e": "cd Real-Time_Collab_Notes-API && ./node_modules/.bin/ts-node -r tsconfig-paths/register test/crdt-e2e-live.ts",
+    "db:push": "cd Real-Time_Collab_Notes-API && npx prisma db push",
+    "db:generate": "cd Real-Time_Collab_Notes-API && npx prisma generate",
+    "db:studio": "cd Real-Time_Collab_Notes-API && npx prisma studio"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
